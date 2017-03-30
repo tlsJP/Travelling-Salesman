@@ -2,6 +2,7 @@ package com.jp.client;
 
 import com.jp.core.AddressedCircle;
 import com.jp.core.PermutationService;
+import javafx.animation.AnimationTimer;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.scene.Group;
@@ -27,13 +28,13 @@ public class View extends Application {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(View.class);
 
-    private static final int GRID_HEIGHT = 9 * 4;
-    private static final int GRID_WIDTH = 21 * 4;
+    private static final int GRID_HEIGHT = 9 * 5;
+    private static final int GRID_WIDTH = 21 * 5;
 
     private static final int NODE_DIMENSION = 10;
     private static final int SCENE_HEIGHT = GRID_HEIGHT * NODE_DIMENSION;
     private static final int SCENE_WIDTH = GRID_WIDTH * NODE_DIMENSION;
-    private static final int CITIES = 7;
+    private static final int CITIES = 6;
     private static final int CITY_RADIUS = 10;
 
     private static Random rand = new Random();
@@ -43,7 +44,8 @@ public class View extends Application {
     private static AddressedCircle[] cities = new AddressedCircle[CITIES];
     private static Circle[] bestRoute = new Circle[CITIES];
     private static PermutationService permutationService;
-    private static List<Line> lineRoute;
+    private static List<Line> currentLineRoute;
+    private static List<Line> bestLineRoute;
 
     /**
      * @param args
@@ -66,11 +68,11 @@ public class View extends Application {
 
     }
 
-    private static void generateLineRoute(Circle[] permutation, Color color) {
+    private static void generateLineRoute(Circle[] permutation, Color color,List<Line> route) {
 
         for (int i = 0; i < permutation.length - 1; i++) {
 
-            Line l = lineRoute.get(i);
+            Line l = route.get(i);
             l.setStroke(color);
             l.setStartX(permutation[i].getCenterX());
             l.setStartY(permutation[i].getCenterY());
@@ -97,49 +99,19 @@ public class View extends Application {
             root.getChildren().add(t);
         }
         bestRoute = cities;
-        lineRoute = Stream.generate(Line::new).limit(cities.length).collect(Collectors.toList());
-        generateLineRoute(cities, Color.DARKGRAY);
-        root.getChildren().addAll(lineRoute);
+        currentLineRoute = Stream.generate(Line::new).limit(cities.length).collect(Collectors.toList());
+        bestLineRoute = Stream.generate(Line::new).limit(cities.length).collect(Collectors.toList());
+        root.getChildren().addAll(currentLineRoute);
+        root.getChildren().addAll(bestLineRoute);
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
 
-
-        LOGGER.info("main : " + Thread.currentThread().getName());
-        int pCounter = 0;
-        Circle[] currentPermutation = (Circle[]) permutationService.getNextPermutation();
-        while (currentPermutation != null) {
-            pCounter++;
-            LOGGER.info("iteration : {}", pCounter);
-
-            double cpDist = 0;
-            for (int i = 0; i < currentPermutation.length - 1; i++) {
-                // calculate distance between each circle
-                cpDist += calculateDistance(currentPermutation[i], currentPermutation[i + 1]);
-            }
-            if (cpDist < shortestDistanceFound) {
-                shortestDistanceFound = cpDist;
-                LOGGER.info("Found current shortest distance: {}", shortestDistanceFound);
-                LOGGER.info("best route : {}{}{}{}{} ", currentPermutation);
-                bestRoute = currentPermutation.clone();
-
-                generateLineRoute(bestRoute, Color.GREEN);
-
-            }
-
-            currentPermutation = (Circle[]) permutationService.getNextPermutation();
-        }
-
-
-        LOGGER.info("best route : {}{}{}{}{} ", bestRoute);
-        LOGGER.info("shortest distance : {}", shortestDistanceFound);
-
-
         Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT, Color.WHITE);
         primaryStage.setScene(scene);
         primaryStage.setTitle(this.getClass().getSimpleName());
-        scene.setFill(Color.rgb(25, 25, 25));
+        scene.setFill(Color.rgb(30, 30, 30));
 
 
         Timeline timeline = new Timeline();
@@ -147,7 +119,42 @@ public class View extends Application {
         timeline.play();
 
 
+        AnimationTimer timer = new AnimationTimer(){
+
+            @Override
+            public void handle(long now) {
+                Circle[] currentPermutation = (Circle[]) permutationService.getNextPermutation();
+                if (currentPermutation != null) {
+
+                    generateLineRoute(currentPermutation, Color.DARKGREEN,currentLineRoute);
+
+                    double cpDist = 0;
+                    for (int i = 0; i < currentPermutation.length - 1; i++) {
+                        // calculate distance between each circle
+                        cpDist += calculateDistance(currentPermutation[i], currentPermutation[i + 1]);
+                    }
+                    if (cpDist < shortestDistanceFound) {
+                        shortestDistanceFound = cpDist;
+                        LOGGER.info("Found current shortest distance: {}", shortestDistanceFound);
+                        LOGGER.info("best route : {}{}{}{}{} ", currentPermutation);
+                        bestRoute = currentPermutation.clone();
+
+                        generateLineRoute(bestRoute,Color.CORNFLOWERBLUE,bestLineRoute);
+                    }
+                } else{
+                    LOGGER.info("No permutation to calculate");
+                    this.stop();
+                }
+
+            }
+        };
+
+        timer.start();
+
         primaryStage.show();
+
+        LOGGER.info("best route : {}{}{}{}{} ", bestRoute);
+        LOGGER.info("shortest distance : {}", shortestDistanceFound);
 
     }
 
