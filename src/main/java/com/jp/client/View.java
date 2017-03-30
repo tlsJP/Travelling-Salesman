@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -28,13 +29,13 @@ public class View extends Application {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(View.class);
 
-    private static final int GRID_HEIGHT = 9 * 5;
-    private static final int GRID_WIDTH = 21 * 5;
+    private static final int GRID_HEIGHT = 9 * 6;
+    private static final int GRID_WIDTH = 21 * 6;
 
     private static final int NODE_DIMENSION = 10;
     private static final int SCENE_HEIGHT = GRID_HEIGHT * NODE_DIMENSION;
     private static final int SCENE_WIDTH = GRID_WIDTH * NODE_DIMENSION;
-    private static final int CITIES = 8;
+    private static final int CITIES = 9;
     private static final int CITY_RADIUS = 10;
 
     private static Random rand = new Random();
@@ -47,12 +48,15 @@ public class View extends Application {
     private static List<Line> currentLineRoute;
     private static List<Line> bestLineRoute;
 
+    private static Text iterationText = new Text();
+    private static  long maxIterations;
+
     /**
      * @param args
      */
     public static void main(String[] args) throws InterruptedException {
 
-        addPoints();
+        setup();
 
         permutationService = new PermutationService(fjp, cities);
 
@@ -85,7 +89,7 @@ public class View extends Application {
     /**
      * Creates cities
      */
-    private static void addPoints() {
+    private static void setup() {
         for (int i = 0; i < CITIES; i++) {
             AddressedCircle city = new AddressedCircle(rand.nextInt(SCENE_WIDTH), rand.nextInt(SCENE_HEIGHT), CITY_RADIUS, Color.AQUAMARINE);
             cities[i] = city;
@@ -103,6 +107,13 @@ public class View extends Application {
         bestLineRoute = Stream.generate(Line::new).limit(cities.length).collect(Collectors.toList());
         root.getChildren().addAll(currentLineRoute);
         root.getChildren().addAll(bestLineRoute);
+
+        iterationText.setFill(Color.WHITE);
+        iterationText.setText("0");
+        iterationText.setFont(Font.font(36));
+        iterationText.setY(40);
+        root.getChildren().add(iterationText);
+        maxIterations = factorial(cities.length);
     }
 
     @Override
@@ -128,7 +139,7 @@ public class View extends Application {
                 Circle[] currentPermutation = (Circle[]) permutationService.getNextPermutation();
                 if (currentPermutation != null) {
                     iterationCounter++;
-
+                    iterationText.setText(iterationCounter+"/"+ maxIterations);
                     generateLineRoute(currentPermutation, Color.DARKGREEN,currentLineRoute);
 
                     double cpDist = 0;
