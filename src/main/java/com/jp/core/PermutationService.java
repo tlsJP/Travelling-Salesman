@@ -3,7 +3,6 @@ package com.jp.core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -22,8 +21,12 @@ public class PermutationService {
     private final ExecutorService executor;
     private final BlockingQueue<Object[]> permutations = new ArrayBlockingQueue<>(20);
 
-    public PermutationService(ExecutorService fjp) {
+    private boolean permutationsCalculating = false;
+
+    public PermutationService(ExecutorService fjp, Object[] array) throws InterruptedException {
         executor = fjp;
+        executor.submit(new PermuteRunner(array));
+
     }
 
     private static void swap(Object[] arr, int i, int j) {
@@ -32,10 +35,46 @@ public class PermutationService {
         arr[j] = t;
     }
 
-    public Queue<Object[]> permute(Object[] arr) {
-        executor.submit(new PermuteRunner(arr));
+    public Object[] getNextPermutation() {
 
-        return permutations;
+        try {
+
+            if (!permutations.isEmpty()) {
+                return permutations.take();
+            } else {
+                if (isCalculating()) {
+                    LOGGER.info("trying to take...");
+                    return permutations.take();
+                }
+            }
+
+            // if calculating and it's empty
+            // then try to take
+
+            // if calculating and not empty
+            // then try to take
+
+            // if not calculating and not empty
+            // then try to take
+
+            // if not calculating and empty
+            // return null;
+
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        LOGGER.info("no more permutations?");
+        return null;
+    }
+
+    private synchronized boolean isCalculating() {
+        return permutationsCalculating;
+    }
+
+    private synchronized void setPermutationsCalculating(boolean bool) {
+        permutationsCalculating = bool;
     }
 
     private class PermuteRunner implements Runnable {
@@ -47,10 +86,12 @@ public class PermutationService {
         }
 
         private void doPermute(Object[] arr, int n) {
+            setPermutationsCalculating(true);
+
             LOGGER.debug("permute - {}{}{}", arr);
 
             if (n == 1) {
-                LOGGER.info("permute complete - {}{}{}", arr);
+                LOGGER.debug("permute complete - {}{}{}", arr);
                 try {
                     permutations.put(arr.clone());
                 } catch (InterruptedException e) {
@@ -66,6 +107,7 @@ public class PermutationService {
                 swap(arr, i, n - 1);
             }
 
+            setPermutationsCalculating(false);
 
         }
 
@@ -73,7 +115,6 @@ public class PermutationService {
         public void run() {
             doPermute(baseArray, baseArray.length);
         }
-
     }
 
 }
