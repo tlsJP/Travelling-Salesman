@@ -34,7 +34,7 @@ public class View extends Application {
     private static final int NODE_DIMENSION = 10;
     private static final int SCENE_HEIGHT = GRID_HEIGHT * NODE_DIMENSION;
     private static final int SCENE_WIDTH = GRID_WIDTH * NODE_DIMENSION;
-    private static final int CITIES = 6;
+    private static final int CITIES = 8;
     private static final int CITY_RADIUS = 10;
 
     private static Random rand = new Random();
@@ -59,7 +59,7 @@ public class View extends Application {
         launch(args);
     }
 
-    public static double calculateDistance(Circle a, Circle b) {
+    private static double calculateDistance(Circle a, Circle b) {
         // Pythagorean theroem
         double xDist = Math.abs(a.getCenterX() - b.getCenterX());
         double yDist = Math.abs(b.getCenterY() - b.getCenterY());
@@ -121,10 +121,13 @@ public class View extends Application {
 
         AnimationTimer timer = new AnimationTimer(){
 
+            int iterationCounter=0;
+
             @Override
             public void handle(long now) {
                 Circle[] currentPermutation = (Circle[]) permutationService.getNextPermutation();
                 if (currentPermutation != null) {
+                    iterationCounter++;
 
                     generateLineRoute(currentPermutation, Color.DARKGREEN,currentLineRoute);
 
@@ -143,6 +146,7 @@ public class View extends Application {
                     }
                 } else{
                     LOGGER.info("No permutation to calculate");
+                    LOGGER.info("Processed {} iterations out of expected {}", iterationCounter, factorial(cities.length));
                     this.stop();
                 }
 
@@ -156,6 +160,18 @@ public class View extends Application {
         LOGGER.info("best route : {}{}{}{}{} ", bestRoute);
         LOGGER.info("shortest distance : {}", shortestDistanceFound);
 
+    }
+
+    /**
+     * Just calculates factorial...
+     * @param n
+     * @return
+     */
+    private static int factorial(int n){
+        if(n==1){
+            return 1;
+        }
+        return n * factorial(n-1);
     }
 
 }
